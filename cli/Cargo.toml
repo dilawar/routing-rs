@@ -5,5 +5,5 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.98"
-dsn-parser = { path = "../libdsn_parser" }
+dsn-parser = { path = "../dsn-parser" }
 tracing = "0.1.41"
