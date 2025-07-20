@@ -1,0 +1,25 @@
+[package]
+name = "dsn-parser"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "dsn_parser"
+crate-type = ["cdylib"]
+
+[[bin]]
+name = "dsn-parser"
+src = "src/main.rs"
+
+[dependencies]
+anyhow = "1.0.98"
+pom = "3.4.0"
+pyo3 = { version = "0.25.0", features = ["anyhow", "serde"] }
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
+tracing = "0.1.41"
+
+[dev-dependencies]
+glob = "0.3.2"
+tracing-test = "0.2.5"
