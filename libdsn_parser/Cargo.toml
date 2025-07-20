@@ -8,10 +8,6 @@ edition = "2021"
 name = "dsn_parser"
 crate-type = ["cdylib"]
 
-[[bin]]
-name = "dsn-parser"
-src = "src/main.rs"
-
 [dependencies]
 anyhow = "1.0.98"
 pom = "3.4.0"
