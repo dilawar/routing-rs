@@ -1,0 +1,28 @@
+// Whitespace & comments
+WHITESPACE = _{ " " | "\t" | NEWLINE | COMMENT }
+COMMENT    = _{ ";" ~ (!NEWLINE ~ ANY)* | "//" ~ (!NEWLINE ~ ANY)* }
+
+// Entry point
+file       =  { SOI ~ (sexpr | COMMENT | WHITESPACE)* ~ EOI }
+
+// S-expressions
+sexpr      =  { "(" ~ WS ~ symbol ~ (WS ~ atom)* ~ WS ~ ")" }
+
+// Atoms
+atom       =  { sexpr | string | number | symbol }
+
+// Tokens
+symbol     = @{ (ASCII_ALPHANUMERIC | "_" | "-" | "." | ":" | "*" | "?" | "+" | "#")+ }
+
+number     = @{
+    "-"? ~ (ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT+)?
+          | "." ~ ASCII_DIGIT+)
+    ~ (("e" | "E") ~ ("+" | "-")? ~ ASCII_DIGIT+)?
+}
+
+string     = @{
+    "\"" ~ ( "\\\"" | "\\\\" | "\\n" | "\\t" | "\\r" | !("\"") ~ ANY )* ~ "\""
+}
+
+// Helpers
+WS          = _{ WHITESPACE* }

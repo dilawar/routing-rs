@@ -21,7 +21,7 @@ pub fn parse_file(infile: String) -> PyResult<Pcb> {
 
 #[pyfunction]
 fn parse_string(dsn: &str) -> PyResult<Pcb> {
-    tracing::info!("Parsing content\n\n{dsn}");
+    tracing::debug!("Parsing content\n\n{dsn}");
     let mut pcb = Pcb::default();
     pcb.parse(dsn)?;
     Ok(pcb)
