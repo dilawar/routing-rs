@@ -69,25 +69,24 @@ pub fn parse_dsn(input: &str) -> anyhow::Result<Pcb> {
 mod tests {
     use super::*;
 
-    const SAMPLE: &str = r#"(pcb C:\Users\Owner\Desktop\hw_48\hw_48.dsn
-             (parser
-                 (string_quote ")
-                 (host_cad "KiCad's cad")
-                 (host_version "(5.1.5)-3")
-             )
-             (resolution um 10)
-             (design
-                 (unit mm)
-                 (layers (signal F.Cu) (signal B.Cu))
-                 (component U1 (at 12.7 7.5) (rotate 90))
-                 (net N$1 (pin U1 1) (pin R1 2))
-             )
-         )"#;
-
     #[test]
     #[tracing_test::traced_test]
     fn test_parse_simple_dsn() {
-        parse_dsn(SAMPLE).expect("parsing failed");
+        let simple = r#"(pcb C:\Users\Owner\Desktop\hw_48\hw_48.dsn
+                (parser
+                    (string_quote ")
+                    (host_cad "KiCad's cad")
+                    (host_version "(5.1.5)-3")
+                )
+                (resolution um 10)
+                (design
+                    (unit mm)
+                    (layers (signal F.Cu) (signal B.Cu))
+                    (component U1 (at 12.7 7.5) (rotate 90))
+                    (net N$1 (pin U1 1) (pin R1 2))
+                )
+            )"#;
+        parse_dsn(simple).expect("parsing failed");
     }
 
     #[test]
@@ -95,11 +94,17 @@ mod tests {
     fn test_parse_atom() {
         for atom in [
             r#"(string_quote ")"#,
+            r#"(comment "")"#,
+            r#"(comment "'")"#,
+            r#"(abc 123)"#,
+            r#"(abc -123)"#,
+            r#"(abc-1# -123)"#,
+            r#"(MC-BD/R# -1.23)"#,
             r#"(host_version "(5.1.5)-3")"#,
             r#"(host_cad "KiCad's cad")"#,
         ] {
             let parsed = DsnParser::parse(Rule::atom, atom).unwrap();
-            tracing::warn!("Parsed atom string {parsed:#?}");
+            tracing::warn!("Parsed atom string {parsed:?}");
             assert_eq!(parsed.as_str(), atom);
         }
     }
@@ -107,13 +112,13 @@ mod tests {
     #[test]
     #[tracing_test::traced_test]
     fn test_parse_sexpr() {
-        const INPUT: &str = r#"(parser
-                 (string_quote ")
-                 (acbc 123)
-                 (xyz_abc zyz_abd)
-                 (host_cad "KiCad's cad")
-                 (host_version "(5.1.5)-3")
-             )"#;
+        const INPUT: &str = r#"(parser 
+                (string_quote ") 
+                (acbc 123) 
+                (xyz_abc zyz_abd) 
+                (host_cad "KiCad's cad")
+                (host_version "(5.1.5)-3")
+            )"#;
         let parsed = DsnParser::parse(Rule::sexpr, INPUT)
             .unwrap()
             .next()
