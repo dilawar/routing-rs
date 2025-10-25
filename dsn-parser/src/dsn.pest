@@ -12,7 +12,7 @@ sexpr      =  { "(" ~ WS ~ symbol ~ (WS ~ atom)* ~ WS ~ ")" }
 atom       =  { sexpr | string | number | symbol }
 
 // Tokens
-symbol     = @{ (ASCII_ALPHANUMERIC | "_" | "-" | "." | ":" | "*" | "?" | "+" | "#")+ }
+symbol     = @{ (ASCII_ALPHANUMERIC | "_" | "-" | "." | ":" | "*" | "?" | "+" | "#" | "$")+ }
 
 number     = @{
     "-"? ~ (ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT+)?
