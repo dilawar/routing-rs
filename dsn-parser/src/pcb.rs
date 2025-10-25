@@ -74,8 +74,8 @@ mod tests {
     fn test_parse_simple_dsn() {
         let simple = r#"(pcb C:\Users\Owner\Desktop\hw_48\hw_48.dsn
                 (parser
-                    (string_quote ")
                     (host_cad "KiCad's cad")
+                    (string_quote ")
                     (host_version "(5.1.5)-3")
                 )
                 (resolution um 10)
