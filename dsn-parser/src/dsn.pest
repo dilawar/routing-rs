@@ -11,7 +11,7 @@ pcb        = { "(" ~ "pcb" ~ id ~ sexpr+ ~ ")" }
 sexpr      =  { "(" ~ symbol ~ (atom)+ ~ ")" }
 
 // A symbol is word that is not a string_literal
-symbol     = @{ (ASCII_ALPHANUMERIC | "_" | "-" | "." | ":" | "*" | "?" | "+" | "#" | "$" | "/")+ | "\""}
+symbol     = @{ (!"(" ~ !")" ~ (ASCII_ALPHANUMERIC | "_" | "-" | "." | ":" | "*" | "?" | "+" | "#" | "$" | "/"))+ }
 
 // Atoms
 atom       =  { string_literal | sexpr | number | symbol }
