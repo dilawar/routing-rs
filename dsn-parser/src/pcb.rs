@@ -2,10 +2,8 @@
 //!
 //! See the official documentation.
 
-use pest::iterators::Pair;
 use pest::Parser;
 use pest_derive::Parser;
-use thiserror::Error;
 
 #[pyo3::pyclass]
 #[derive(Debug, Default)]
@@ -43,47 +41,25 @@ impl Pcb {
 #[grammar = "dsn.pest"]
 struct DsnParser;
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum Atom {
-    SExpr(SExpr),
-    String(String),
-    Number(f64),
-    Symbol(String),
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct SExpr {
-    pub head: String,
-    pub args: Vec<Atom>,
-}
-
-#[derive(Debug, Error)]
-pub enum DsnError {
-    #[error("pest parse error: {0}")]
-    Pest(#[from] pest::error::Error<Rule>),
-
-    #[error("invalid number literal: {0}")]
-    Number(String),
-
-    #[error("unexpected grammar node: {0:?}")]
-    Unexpected(Rule),
-}
-
-impl SExpr {
-    /// Helper to fetch a nested S-expr by head name.
-    pub fn find_all<'a>(&'a self, head: &'a str) -> impl Iterator<Item = &'a SExpr> {
-        self.args.iter().filter_map(move |a| match a {
-            Atom::SExpr(s) if s.head.eq_ignore_ascii_case(head) => Some(s),
-            _ => None,
-        })
-    }
-}
-
 /// Parse a given DSN string
-pub fn parse_dsn(input: &str) -> anyhow::Result<()> {
+pub fn parse_dsn(input: &str) -> anyhow::Result<Pcb> {
     let dsn = DsnParser::parse(Rule::file, input)?.next().unwrap();
-    tracing::debug!("DSN {dsn:#?}");
-    Ok(())
+    let pcb = Pcb::default();
+    for line in dsn.into_inner() {
+        match line.as_rule() {
+            Rule::sexpr => {
+                tracing::info!("sexpr: {}", line.into_inner());
+            }
+            Rule::WHITESPACE | Rule::COMMENT => {
+                tracing::debug!("whitespace/comment");
+            }
+            Rule::EOI => {
+                tracing::debug!("EOI");
+            }
+        }
+        tracing::info!("Rule is {rule:?}");
+    }
+    Ok(pcb)
 }
 
 #[cfg(test)]
