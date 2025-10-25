@@ -46,9 +46,10 @@ pub fn parse_dsn(input: &str) -> anyhow::Result<Pcb> {
     let dsn = DsnParser::parse(Rule::file, input)?.next().unwrap();
     let pcb = Pcb::default();
     for line in dsn.into_inner() {
+        // tracing::debug!("Rule is {line:?}");
         match line.as_rule() {
             Rule::sexpr => {
-                tracing::info!("sexpr: {}", line.into_inner());
+                tracing::info!("sexpr: {line:#?}");
             }
             Rule::WHITESPACE | Rule::COMMENT => {
                 tracing::debug!("whitespace/comment");
@@ -56,8 +57,10 @@ pub fn parse_dsn(input: &str) -> anyhow::Result<Pcb> {
             Rule::EOI => {
                 tracing::debug!("EOI");
             }
+            _ => {
+                tracing::debug!("unsupported {}", line.into_inner())
+            }
         }
-        tracing::info!("Rule is {rule:?}");
     }
     Ok(pcb)
 }
@@ -66,19 +69,55 @@ pub fn parse_dsn(input: &str) -> anyhow::Result<Pcb> {
 mod tests {
     use super::*;
 
-    const SAMPLE: &str = r#"
-        ; minimal DSN-like sample
-        (design
-          (unit mm)
-          (layers (signal F.Cu) (signal B.Cu))
-          (component U1 (at 12.7 7.5) (rotate 90))
-          (net N$1 (pin U1 1) (pin R1 2))
-        )
-    "#;
+    const SAMPLE: &str = r#"(pcb C:\Users\Owner\Desktop\hw_48\hw_48.dsn
+             (parser
+                 (string_quote ")
+                 (host_cad "KiCad's cad")
+                 (host_version "(5.1.5)-3")
+             )
+             (resolution um 10)
+             (design
+                 (unit mm)
+                 (layers (signal F.Cu) (signal B.Cu))
+                 (component U1 (at 12.7 7.5) (rotate 90))
+                 (net N$1 (pin U1 1) (pin R1 2))
+             )
+         )"#;
 
     #[test]
     #[tracing_test::traced_test]
     fn test_parse_simple_dsn() {
-        parse_dsn(SAMPLE).expect("parse ok");
+        parse_dsn(SAMPLE).expect("parsing failed");
+    }
+
+    #[test]
+    #[tracing_test::traced_test]
+    fn test_parse_atom() {
+        for atom in [
+            r#"(string_quote ")"#,
+            r#"(host_version "(5.1.5)-3")"#,
+            r#"(host_cad "KiCad's cad")"#,
+        ] {
+            let parsed = DsnParser::parse(Rule::atom, atom).unwrap();
+            tracing::warn!("Parsed atom string {parsed:#?}");
+            assert_eq!(parsed.as_str(), atom);
+        }
+    }
+
+    #[test]
+    #[tracing_test::traced_test]
+    fn test_parse_sexpr() {
+        const INPUT: &str = r#"(parser
+                 (string_quote ")
+                 (acbc 123)
+                 (xyz_abc zyz_abd)
+                 (host_cad "KiCad's cad")
+                 (host_version "(5.1.5)-3")
+             )"#;
+        let parsed = DsnParser::parse(Rule::sexpr, INPUT)
+            .unwrap()
+            .next()
+            .unwrap();
+        tracing::warn!("Parsed sexpr {parsed:#?}");
     }
 }
