@@ -112,17 +112,18 @@ mod tests {
     #[test]
     #[tracing_test::traced_test]
     fn test_parse_sexpr() {
+        pest::set_error_detail(true);
         const INPUT: &str = r#"(parser 
-                (string_quote ") 
-                (acbc 123) 
-                (xyz_abc zyz_abd) 
-                (host_cad "KiCad's cad")
                 (host_version "(5.1.5)-3")
+                (acbc 123)
+                (xyz_abc zyz_abd)
+                (host_cad "KiCad's cad")
+                (string_quote ")
             )"#;
         let parsed = DsnParser::parse(Rule::sexpr, INPUT)
             .unwrap()
             .next()
             .unwrap();
-        tracing::warn!("Parsed sexpr {parsed:#?}");
+        tracing::info!("{parsed:#?}");
     }
 }
