@@ -8,13 +8,15 @@ dsn        =  { pcb }
 pcb        = { "(" ~ "pcb" ~ id ~ sexpr+ ~ ")" }
 
 // S-expressions
-sexpr      =  { "(" ~ symbol ~ (atom)+ ~ ")" }
+sexpr      =  { "(" ~ symbol ~ atom+ ~ ")" }
 
 // Atoms
 atom       =  { string_literal | sexpr | number | symbol }
 
-// Tokens
-symbol     = @{ (ASCII_ALPHANUMERIC | "_" | "-" | "." | ":" | "*" | "?" | "+" | "#" | "$" | "\"")+ }
+// A symbol is word or "
+symbol     = @{ (ASCII_ALPHANUMERIC | "_" | "-" | "." | ":" | "*" | "?" | "+" | "#" | "$" | "/")+ | "\""}
+
+// Id need to support paths as well on windows/unix both.
 id         = @{ (ASCII_ALPHANUMERIC | "_" | "-" | "." | ":" | "*" | "?" | "+" | "#" | "$" | "\\" | "/")+ }
 
 number     = @{
@@ -23,7 +25,8 @@ number     = @{
     ~ (("e" | "E") ~ ("+" | "-")? ~ ASCII_DIGIT+)?
 }
 
-string_literal =  @{ "\"" ~ (!"\"" ~ ANY )* ~ "\"" }
+// String literal between  ""
+string_literal =  @{ "\"" ~ (!"\"" ~ ANY)* ~ "\"" }
 
 // Helpers
 WS          = _{ WHITESPACE* }
