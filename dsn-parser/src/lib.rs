@@ -2,6 +2,8 @@ use pyo3::prelude::*;
 use std::path::Path;
 
 mod pcb;
+mod syntax_tree;
+
 use pcb::Pcb;
 
 /// A Python module implemented in Rust.
@@ -21,11 +23,13 @@ pub fn parse_file(infile: String) -> PyResult<Pcb> {
 
 #[pyfunction]
 fn parse_string(text: &str) -> PyResult<Pcb> {
-    Ok(pcb::parse_dsn(text)?)
+    let mut pcb = Pcb::default();
+    pcb.parse(text)?;
+    Ok(pcb)
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
     use tracing_test::traced_test;
 
