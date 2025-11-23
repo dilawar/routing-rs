@@ -1,6 +1,5 @@
 (pcb C:\Users\Owner\Desktop\hw_72_nb_git_JaredDoesNotWantGitHub\hw72nb.dsn
   (parser
-    (string_quote ")
     (space_in_quoted_tokens on)
     (host_cad "KiCad's Pcbnew")
     (host_version "(5.1.5)-3")
