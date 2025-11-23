@@ -38,7 +38,7 @@ impl Pcb {
 }
 
 #[derive(Parser)]
-#[grammar = "dsn.pest"]
+#[grammar = "../grammars/dsn.pest"]
 struct DsnParser;
 
 /// Parse a given DSN string

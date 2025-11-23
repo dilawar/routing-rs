@@ -34,4 +34,3 @@ WS          = _{ WHITESPACE* }
 // Whitespace & comments
 WHITESPACE = _{ " " | "\t" | NEWLINE }
 COMMENT    = _{ ";" ~ (!NEWLINE ~ ANY)* | "//" ~ (!NEWLINE ~ ANY)* }
-
