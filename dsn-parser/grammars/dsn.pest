@@ -14,7 +14,7 @@ sexpr      =  { "(" ~ symbol ~ (atom)+ ~ ")" }
 symbol     = @{ (!"(" ~ !")" ~ (ASCII_ALPHANUMERIC | "_" | "-" | "." | ":" | "*" | "?" | "+" | "#" | "$" | "/"))+ }
 
 // Atoms
-atom       =  { string_literal | sexpr | number | symbol }
+atom       =  { symbol | string_literal | sexpr | number }
 
 // Id need to support paths as well on windows/unix both.
 id         = @{ (ASCII_ALPHANUMERIC | "_" | "-" | "." | ":" | "*" | "?" | "+" | "#" | "$" | "\\" | "/")+ }
@@ -26,7 +26,9 @@ number     = @{
 }
 
 // String literal between  ""
-string_literal =  { "\"" ~ (!"\"" ~ ANY)* ~ "\"" }
+tq = @{ "\"" }
+re = @{ (!tq ~ ANY)* }
+string_literal =  @{ tq ~ re ~ tq }
 
 // Helpers
 WS          = _{ WHITESPACE* }
