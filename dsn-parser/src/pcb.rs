@@ -96,6 +96,7 @@ pub fn parse_dsn(input: &str) -> Result<Vec<SExpr>, DsnError> {
 fn build_sexpr(pair: Pair<Rule>) -> Result<SExpr, DsnError> {
     debug_assert_eq!(pair.as_rule(), Rule::sexpr);
     let mut inner = pair.into_inner(); // symbol then zero+ atoms
+    tracing::debug!("building s-exp {inner:?}");
     let head = inner
         .next()
         .and_then(|p| {
@@ -192,7 +193,8 @@ mod tests {
     "#;
 
     #[test]
-    fn parses_sample() {
+    #[tracing_test::traced_test]
+    fn test_parse_simple_dsn() {
         let roots = parse_dsn(SAMPLE).expect("parse ok");
         assert!(!roots.is_empty());
         let design = filter_top(&roots, "design").next().expect("has design");
