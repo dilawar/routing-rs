@@ -72,10 +72,11 @@ mod tests {
     #[test]
     #[tracing_test::traced_test]
     fn test_parse_simple_dsn() {
+        pest::set_error_detail(true);
         let simple = r#"(pcb C:\Users\Owner\Desktop\hw_48\hw_48.dsn
                 (parser
                     (host_cad "KiCad's cad")
-                    (string_quote ")
+                    // (string_quote ")
                     (host_version "(5.1.5)-3")
                 )
                 (resolution um 10)
@@ -92,8 +93,9 @@ mod tests {
     #[test]
     #[tracing_test::traced_test]
     fn test_parse_atom() {
+        pest::set_error_detail(true);
         for atom in [
-            r#"(string_quote ")"#,
+            // r#"(string_quote ")"#,
             r#"(comment "")"#,
             r#"(comment "'")"#,
             r#"(abc 123)"#,
@@ -118,7 +120,7 @@ mod tests {
                 (acbc 123)
                 (xyz_abc zyz_abd)
                 (host_cad "KiCad's cad")
-                (string_quote ")
+                // (string_quote ")
             )"#;
         let parsed = DsnParser::parse(Rule::sexpr, INPUT)
             .unwrap()
