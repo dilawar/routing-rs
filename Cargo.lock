@@ -87,6 +87,7 @@ name = "dsn-parser"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "argh",
  "glob",
  "pom",
  "pyo3",
