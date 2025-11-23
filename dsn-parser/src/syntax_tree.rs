@@ -17,6 +17,24 @@ pub enum S {
     Pair(Box<(S, S)>),
 }
 
+impl S {
+    /// Walk and print the tree.
+    pub fn walk_and_print(self) {
+        match self {
+            S::Nil => {}
+            S::Int(x) => println!("int {x}"),
+            S::Float(x) => println!("float {x}"),
+            S::Symbol(x) => println!("symbol {x}"),
+            S::String(x) => println!("string {x}"),
+            S::Pair(x) => {
+                let (a, b) = *x;
+                a.walk_and_print();
+                b.walk_and_print();
+            }
+        }
+    }
+}
+
 pub struct SF;
 
 impl SexprFactory for SF {

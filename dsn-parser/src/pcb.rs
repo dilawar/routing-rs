@@ -31,8 +31,8 @@ pub struct Pcb {
 impl Pcb {
     /// Parse into Pcb
     pub fn parse(&mut self, text: &str) -> anyhow::Result<()> {
-        tracing::debug!("Parsing {text:?}");
-        let _tree = syntax_tree::parse(text);
+        let tree = syntax_tree::parse(text).expect("failed to parse");
+        tree.walk_and_print();
         Ok(())
     }
 }
