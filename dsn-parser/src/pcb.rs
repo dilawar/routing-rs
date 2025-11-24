@@ -2,7 +2,7 @@
 //!
 //! See the official documentation.
 
-use pest::Parser;
+use pest::{iterators::Pair, Parser};
 use pest_derive::Parser;
 
 #[pyo3::pyclass]
@@ -30,9 +30,8 @@ pub struct Pcb {
 }
 
 impl Pcb {
-    /// Parse into Pcb
-    pub fn parse(&mut self, text: &str) -> anyhow::Result<()> {
-        tracing::debug!("Parsing {text:?}");
+    pub fn build(&mut self, rule: Pair<'_, Rule>) -> anyhow::Result<()> {
+        tracing::info!("Building PCB structure from {rule:?}");
         Ok(())
     }
 }
@@ -44,18 +43,10 @@ struct DsnParser;
 /// Parse a given DSN string
 pub fn parse_dsn(input: &str) -> anyhow::Result<Pcb> {
     let dsn = DsnParser::parse(Rule::file, input)?.next().unwrap();
-    let pcb = Pcb::default();
-    for line in dsn.into_inner() {
-        // tracing::debug!("Rule is {line:?}");
-        match line.as_rule() {
-            Rule::sexpr => {
-                tracing::info!("sexpr: {line:#?}");
-            }
-            _ => {
-                tracing::debug!("unsupported {}", line.into_inner())
-            }
-        }
-    }
+    tracing::info!("{dsn:#?}");
+    let mut pcb = Pcb::default();
+    pcb.build(dsn);
+    // build PCB structure
     Ok(pcb)
 }
 

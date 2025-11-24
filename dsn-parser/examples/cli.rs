@@ -2,6 +2,7 @@
 
 use argh::FromArgs;
 use std::path::Path;
+use tracing_subscriber::EnvFilter;
 
 #[derive(FromArgs)]
 /// Parse DSN flie and output JSON
@@ -12,6 +13,10 @@ struct Cli {
 }
 
 fn main() -> anyhow::Result<()> {
+    tracing_subscriber::fmt()
+        .with_env_filter(EnvFilter::from_default_env())
+        .init();
+
     // First argument is always a file.
     let cli: Cli = argh::from_env();
     let infile = Path::new(&cli.infile);
