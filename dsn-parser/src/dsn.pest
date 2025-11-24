@@ -1,0 +1,21 @@
+WHITESPACE = _{ " " | "\t" | "\n" | "\r\n" }
+file = _{ SOI ~ expr* ~ EOI }
+expr = { iden | comment | sexpr }
+sexpr = { "(" ~ expr* ~ ")" }
+atom = { string | iden }
+iden = { (!(WHITE_SPACE | "(" | ")" | "//" ) ~ ANY)+ }
+string = ${
+  "\"" ~ string_inner ~ "\""
+}
+string_inner = @{ string_char* }
+string_char = {
+  !("\"" | "\\") ~ ANY
+  | "\\" ~ ("\\" | "\"" | "b" | "f" | "n" | "r" | "t")
+  // | "\\" ~ ("u" ~ ACII_HEX_DIGIT{4})
+}
+
+comment = { line_comment | block_comment }
+line_comment = { "//" ~ (!"\n" ~ ANY)* }
+block_comment = { "(;" ~ ( block_inner | block_comment )* ~ ";)" }
+// block_inner = { ( !("(;" | ";)") ~ ANY )* }
+block_inner = { "a" }

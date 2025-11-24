@@ -38,7 +38,7 @@ impl Pcb {
 }
 
 #[derive(Parser)]
-#[grammar = "../grammars/dsn.pest"]
+#[grammar = "dsn.pest"]
 struct DsnParser;
 
 /// Parse a given DSN string
@@ -50,12 +50,6 @@ pub fn parse_dsn(input: &str) -> anyhow::Result<Pcb> {
         match line.as_rule() {
             Rule::sexpr => {
                 tracing::info!("sexpr: {line:#?}");
-            }
-            Rule::WHITESPACE | Rule::COMMENT => {
-                tracing::debug!("whitespace/comment");
-            }
-            Rule::EOI => {
-                tracing::debug!("EOI");
             }
             _ => {
                 tracing::debug!("unsupported {}", line.into_inner())

@@ -1,0 +1,18 @@
+file = _{ SOI ~ sexpr* ~ EOI }
+
+// The main entry point for parsing an S-expression (which can be a single expression).
+sexpr = _{ list | atom }
+
+// A list is an opening parenthesis, followed by zero or more S-expressions, followed by a closing parenthesis.
+list  = { "(" ~ sexpr* ~ ")" }
+
+// An atom is either a number or a symbol.
+atom  = _{ number | symbol }
+
+// A number can be one or more digits. For a more robust number parser, see the pest book.
+number = { ASCII_DIGIT+ }
+
+// A symbol can be one or more non-whitespace, non-parenthesis characters.
+symbol = { !("(" | ")" | WHITESPACE) ~ ANY+ }
+
+WHITESPACE = _{ " " | "\t" | "\n" | "\r" }
