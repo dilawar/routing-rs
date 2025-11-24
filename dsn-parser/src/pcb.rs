@@ -31,7 +31,16 @@ pub struct Pcb {
 
 impl Pcb {
     pub fn build(&mut self, rule: Pair<'_, Rule>) -> anyhow::Result<()> {
-        tracing::info!("Building PCB structure from {rule:?}");
+        for rule in rule.into_inner() {
+            match rule.as_rule() {
+                Rule::sexpr => {
+                    println!("==> sexpr: {rule:?}");
+                }
+                _ => {
+                    println!("everyting else");
+                }
+            }
+        }
         Ok(())
     }
 }
@@ -43,7 +52,6 @@ struct DsnParser;
 /// Parse a given DSN string
 pub fn parse_dsn(input: &str) -> anyhow::Result<Pcb> {
     let dsn = DsnParser::parse(Rule::file, input)?.next().unwrap();
-    tracing::info!("{dsn:#?}");
     let mut pcb = Pcb::default();
     pcb.build(dsn);
     // build PCB structure
