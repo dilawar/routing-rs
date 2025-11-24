@@ -70,7 +70,7 @@ mod tests {
         let simple = r#"(pcb C:\Users\Owner\Desktop\hw_48\hw_48.dsn
                 (parser
                     (host_cad "KiCad's cad")
-                    // (string_quote ")
+                    (string_quote ")
                     (host_version "(5.1.5)-3")
                 )
                 (resolution um 10)
@@ -89,7 +89,7 @@ mod tests {
     fn test_parse_atom() {
         pest::set_error_detail(true);
         for atom in [
-            // r#"(string_quote ")"#,
+            r#"(string_quote ")"#,
             r#"(comment "")"#,
             r#"(comment "'")"#,
             r#"(abc 123)"#,
@@ -99,7 +99,7 @@ mod tests {
             r#"(host_version "(5.1.5)-3")"#,
             r#"(host_cad "KiCad's cad")"#,
         ] {
-            let parsed = DsnParser::parse(Rule::atom, atom).unwrap();
+            let parsed = DsnParser::parse(Rule::sexpr, atom).unwrap();
             tracing::warn!("Parsed atom string {parsed:?}");
             assert_eq!(parsed.as_str(), atom);
         }
@@ -114,7 +114,7 @@ mod tests {
                 (acbc 123)
                 (xyz_abc zyz_abd)
                 (host_cad "KiCad's cad")
-                // (string_quote ")
+                (string_quote ")
             )"#;
         let parsed = DsnParser::parse(Rule::sexpr, INPUT)
             .unwrap()
