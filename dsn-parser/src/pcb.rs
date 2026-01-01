@@ -34,10 +34,10 @@ impl Pcb {
         for rule in rule.into_inner() {
             match rule.as_rule() {
                 Rule::sexpr => {
-                    println!("==> sexpr: {rule:?}");
+                    println!("{:#?}", rule);
                 }
                 _ => {
-                    println!("everyting else");
+                    eprintln!("everyting else");
                 }
             }
         }

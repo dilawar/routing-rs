@@ -23,6 +23,6 @@ fn main() -> anyhow::Result<()> {
     anyhow::ensure!(infile.exists(), "{infile:?} doesn't exists");
     tracing::info!("Parsing file {infile:?}");
     let result = dsn_parser::parse_file(infile.to_string_lossy().into())?;
-    println!("{result:?}");
+    println!("{result:#?}");
     Ok(())
 }

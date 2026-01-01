@@ -14,7 +14,7 @@ fn dsn_parser(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
 #[pyfunction]
 pub fn parse_file(infile: String) -> PyResult<Pcb> {
-    tracing::info!("Parsing {infile:?}...");
+    tracing::debug!("Parsing {infile:?}...");
     let dsn_string = std::fs::read_to_string(Path::new(&infile)).expect("failed to parse");
     parse_string(&dsn_string)
 }

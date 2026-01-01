@@ -10,3 +10,6 @@ lint:
 fix:
     cargo clippy --no-deps --fix --allow-dirty
     @just fmt
+
+example:
+    cargo run --example cli -- ./tests/Issue066-Project_GP8B.dsn
