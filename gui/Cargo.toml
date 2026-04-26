@@ -1,0 +1,15 @@
+[package]
+name = "dsn-viewer"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "dsn-viewer"
+path = "src/main.rs"
+
+[dependencies]
+dsn-parser = { path = "../dsn-parser" }
+eframe = { version = "0.31", features = ["default"] }
+egui = "0.31"
+rfd = "0.15"
+anyhow = "1.0"

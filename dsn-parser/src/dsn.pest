@@ -1,21 +1,22 @@
 WHITESPACE = _{ " " | "\t" | "\n" | "\r\n" }
-file = _{ SOI ~ expr* ~ EOI }
-expr = { iden | comment | sexpr }
+
+file = { SOI ~ expr* ~ EOI }
+expr = { string | sexpr | comment | iden }
 sexpr = { "(" ~ expr* ~ ")" }
-atom = { string | iden }
-iden = { (!(WHITE_SPACE | "(" | ")" | "//" ) ~ ANY)+ }
-string = ${
-  "\"" ~ string_inner ~ "\""
-}
+
+// Identifiers: any char except whitespace and parens
+iden = @{ (!(WHITE_SPACE | "(" | ")") ~ ANY)+ }
+
+// Quoted strings
+string = ${ "\"" ~ string_inner ~ "\"" }
 string_inner = @{ string_char* }
 string_char = {
-  !("\"" | "\\") ~ ANY
-  | "\\" ~ ("\\" | "\"" | "b" | "f" | "n" | "r" | "t")
-  // | "\\" ~ ("u" ~ ACII_HEX_DIGIT{4})
+    !("\"" | "\\") ~ ANY
+    | "\\" ~ ("\\" | "\"" | "b" | "f" | "n" | "r" | "t")
 }
 
-comment = { line_comment | block_comment }
-line_comment = { "//" ~ (!"\n" ~ ANY)* }
-block_comment = { "(;" ~ ( block_inner | block_comment )* ~ ";)" }
-// block_inner = { ( !("(;" | ";)") ~ ANY )* }
-block_inner = { "a" }
+// Comments are silently discarded
+comment = _{ line_comment | block_comment }
+line_comment = _{ "//" ~ (!"\n" ~ ANY)* }
+block_comment = _{ "(;" ~ block_content ~ ";)" }
+block_content = _{ (!";)" ~ ANY)* }

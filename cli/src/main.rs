@@ -17,7 +17,7 @@ fn main() -> anyhow::Result<()> {
     let infile = Path::new(&cli.infile);
     anyhow::ensure!(infile.exists(), "{infile:?} doesn't exists");
     tracing::info!("Parsing file {infile:?}");
-    let result = dsn_parser::parse_file(infile.to_string_lossy().into())?;
+    let result = dsn_parser::parse_file_rust(&infile.to_string_lossy())?;
     println!("{result:?}");
     Ok(())
 }
