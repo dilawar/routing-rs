@@ -7,7 +7,6 @@ use std::sync::mpsc::Receiver;
 
 const BG_COLOR: Color32 = Color32::from_rgb(20, 20, 20);
 const BOARD_COLOR: Color32 = Color32::from_rgb(30, 60, 30);
-// 8 distinct colors so boards with up to 8 layers get unique colors.
 const LAYER_COLORS: &[Color32] = &[
     Color32::from_rgb(200, 60, 60),   // F.Cu  – red
     Color32::from_rgb(60, 120, 220),  // B.Cu  – blue
@@ -109,7 +108,7 @@ impl DsnViewerApp {
                 color: LAYER_COLORS[i % LAYER_COLORS.len()],
             })
             .collect();
-        // Preserve user visibility preferences; only set defaults on first load.
+        // Only set defaults on first load; preserve user prefs on reload.
         if self.pcb.is_none() {
             self.show_ratsnest = true;
             self.show_keepouts = true;
@@ -127,46 +126,38 @@ impl DsnViewerApp {
         })
     }
 
-    /// Convert a DSN coordinate to a canvas Pos2.
-    /// DSN uses upward Y; screen uses downward Y, so Y is negated.
     fn to_screen(&self, canvas_origin: Pos2, x: f64, y: f64) -> Pos2 {
-        let sx = canvas_origin.x + self.pan.x + (x as f32) * self.zoom;
-        let sy = canvas_origin.y + self.pan.y - (y as f32) * self.zoom;
-        Pos2::new(sx, sy)
+        Pos2::new(
+            canvas_origin.x + self.pan.x + (x as f32) * self.zoom,
+            canvas_origin.y + self.pan.y + (y as f32) * self.zoom,
+        )
     }
 
-    /// Fit the board into the given rect.
     fn fit_to(&mut self, rect: Rect, pcb: &Pcb) {
         let (min_x, min_y, max_x, max_y) = board_bounds(pcb);
         if max_x <= min_x || max_y <= min_y {
             return;
         }
-        let board_w = (max_x - min_x) as f32;
-        let board_h = (max_y - min_y) as f32;
-        let scale_x = rect.width() * 0.9 / board_w;
-        let scale_y = rect.height() * 0.9 / board_h;
-        self.zoom = scale_x.min(scale_y);
-        // After Y-flip, the top of the board in screen space corresponds to max_y in DSN.
+        self.zoom = (rect.width() * 0.9 / (max_x - min_x) as f32)
+            .min(rect.height() * 0.9 / (max_y - min_y) as f32);
         self.pan = Vec2::new(
             rect.width() * 0.05 - min_x as f32 * self.zoom,
-            rect.height() * 0.05 + max_y as f32 * self.zoom,
+            rect.height() * 0.05 - min_y as f32 * self.zoom,
         );
     }
 
     fn draw_pcb(&self, painter: &Painter, origin: Pos2, pcb: &Pcb) {
-        // Board fill
         if let Some(boundary) = &pcb.structure.boundary {
             self.fill_board(painter, origin, boundary);
         }
 
-        // Keepouts
         if self.show_keepouts {
             for ko in &pcb.structure.keepouts {
                 self.draw_shape_outline(painter, origin, ko, KEEPOUT_COLOR, 0.5);
             }
         }
 
-        // Committed wires / traces
+        // Committed wires
         for wire in &pcb.wiring.wires {
             if let Some(color) = self.layer_color(&wire.layer) {
                 draw_polyline(
@@ -177,7 +168,7 @@ impl DsnViewerApp {
             }
         }
 
-        // In-progress (routing thread) wires — dimmed
+        // In-progress wires from routing thread (dimmed)
         for wire in &self.in_progress_wires {
             if let Some(color) = self.layer_color(&wire.layer) {
                 draw_polyline(
@@ -191,13 +182,10 @@ impl DsnViewerApp {
             }
         }
 
-        // Placed vias (committed)
         for via in &pcb.wiring.vias {
             let pos = self.to_screen(origin, via.x, via.y);
             painter.circle_filled(pos, (3.0 * self.zoom).max(2.0), Color32::WHITE);
         }
-
-        // In-progress vias
         for via in &self.in_progress_vias {
             let pos = self.to_screen(origin, via.x, via.y);
             painter.circle_filled(
@@ -207,15 +195,12 @@ impl DsnViewerApp {
             );
         }
 
-        // Pads
         self.draw_pads(painter, origin, pcb);
 
-        // Ratsnest
         if self.show_ratsnest {
             self.draw_ratsnest(painter, origin, pcb);
         }
 
-        // Boundary outline (on top of fill)
         if let Some(boundary) = &pcb.structure.boundary {
             self.draw_shape_outline(
                 painter,
@@ -256,30 +241,28 @@ impl DsnViewerApp {
         let mut screen: Vec<Pos2> =
             points.iter().map(|(x, y)| self.to_screen(origin, *x, *y)).collect();
         if screen.len() > 1 {
-            screen.push(screen[0]); // close
+            screen.push(screen[0]);
             painter.add(egui::Shape::line(screen, Stroke::new(width_px, color)));
         }
     }
 
     fn draw_pads(&self, painter: &Painter, origin: Pos2, pcb: &Pcb) {
         for comp_group in &pcb.placement.components {
-            let image = pcb
-                .library
-                .images
-                .iter()
-                .find(|img| img.name == comp_group.image);
-            let Some(image) = image else { continue };
-
+            let Some(image) = pcb.library.images.iter().find(|i| i.name == comp_group.image)
+            else {
+                continue;
+            };
             for placed in &comp_group.places {
-                let cx = placed.x;
-                let cy = placed.y;
+                let (cx, cy) = (placed.x, placed.y);
                 let rot_rad = placed.rotation.to_radians();
                 let (sin_r, cos_r) = (rot_rad.sin(), rot_rad.cos());
 
                 for pin in &image.pins {
-                    let rx = pin.x * cos_r - pin.y * sin_r;
-                    let ry = pin.x * sin_r + pin.y * cos_r;
-                    let pos = self.to_screen(origin, cx + rx, cy + ry);
+                    let pos = self.to_screen(
+                        origin,
+                        cx + pin.x * cos_r - pin.y * sin_r,
+                        cy + pin.x * sin_r + pin.y * cos_r,
+                    );
                     painter.circle_filled(pos, (2.5 * self.zoom).max(2.0), PAD_COLOR);
                     painter.circle_stroke(
                         pos,
@@ -289,9 +272,8 @@ impl DsnViewerApp {
                 }
 
                 if self.show_component_labels {
-                    let label_pos = self.to_screen(origin, cx, cy);
                     painter.text(
-                        label_pos,
+                        self.to_screen(origin, cx, cy),
                         egui::Align2::CENTER_CENTER,
                         &placed.id,
                         egui::FontId::monospace((9.0 * self.zoom).clamp(7.0, 14.0)),
@@ -303,52 +285,38 @@ impl DsnViewerApp {
     }
 
     fn draw_ratsnest(&self, painter: &Painter, origin: Pos2, pcb: &Pcb) {
-        // Build a map of net name → set of routed pin references from committed + in-progress wires.
-        // Only suppress a net's ratsnest line if every pin in the net has a routed wire.
-        // Since we don't track per-pin routing precisely, we use wire count as a proxy:
-        // show ratsnest for any net that has fewer wires than pins - 1 (minimum spanning connections).
         let mut routed_wire_count: std::collections::HashMap<&str, usize> =
             std::collections::HashMap::new();
-        for w in &pcb.wiring.wires {
-            if let Some(n) = w.net.as_deref() {
-                *routed_wire_count.entry(n).or_insert(0) += 1;
-            }
-        }
-        for w in &self.in_progress_wires {
+        for w in pcb.wiring.wires.iter().chain(&self.in_progress_wires) {
             if let Some(n) = w.net.as_deref() {
                 *routed_wire_count.entry(n).or_insert(0) += 1;
             }
         }
 
         let pad_positions = router::pad_map::build_pad_positions(pcb);
-
         for net in &pcb.network.nets {
             if net.pins.len() < 2 {
                 continue;
             }
             let wire_count = routed_wire_count.get(net.name.as_str()).copied().unwrap_or(0);
-            // A fully routed net needs at least (pins - 1) wires (tree).
             if wire_count >= net.pins.len() - 1 {
                 continue;
             }
             let positions: Vec<Pos2> = net
                 .pins
                 .iter()
-                .filter_map(|pin_ref| pad_positions.get(pin_ref.as_str()))
+                .filter_map(|p| pad_positions.get(p.as_str()))
                 .map(|(x, y)| self.to_screen(origin, *x, *y))
                 .collect();
-
             if positions.len() < 2 {
                 continue;
             }
-            let center = positions[0];
             for other in &positions[1..] {
-                painter.line_segment([center, *other], Stroke::new(0.5, RATSNEST_COLOR));
+                painter.line_segment([positions[0], *other], Stroke::new(0.5, RATSNEST_COLOR));
             }
         }
     }
 
-    /// Drop all routed wires/vias from the loaded PCB and reset routing state.
     fn clear_routing(&mut self) {
         if let Some(pcb) = &mut self.pcb {
             pcb.wiring = dsn_parser::pcb::Wiring::default();
@@ -361,11 +329,10 @@ impl DsnViewerApp {
         self.route_status.clear();
     }
 
-    /// Poll routing thread events; returns true if repaint is needed.
+    /// Drain routing thread events; returns true when the display needs a repaint.
     fn poll_routing(&mut self) -> bool {
         let Some(rx) = &self.route_rx else { return false };
         let mut changed = false;
-
         loop {
             match rx.try_recv() {
                 Ok(event) => {
@@ -374,7 +341,8 @@ impl DsnViewerApp {
                         ProgressEvent::StartNet { name, idx, total } => {
                             self.route_total = total;
                             self.route_done = idx;
-                            self.route_progress = if total > 0 { idx as f32 / total as f32 } else { 0.0 };
+                            self.route_progress =
+                                if total > 0 { idx as f32 / total as f32 } else { 0.0 };
                             self.route_status = format!("Routing {name} ({}/{total})", idx + 1);
                         }
                         ProgressEvent::NetRouted { wires, vias, .. } => {
@@ -388,14 +356,13 @@ impl DsnViewerApp {
                             self.route_progress =
                                 if total > 0 { routed as f32 / total as f32 } else { 0.0 };
                             self.route_status = if routed < total {
-                                format!("Pass {pass}: {routed}/{total} nets routed — rip-up…")
+                                format!("Pass {pass}: {routed}/{total} — refining…")
                             } else {
                                 format!("Pass {pass}: all {total} nets routed")
                             };
                         }
                         ProgressEvent::Finished { wiring } => {
-                            let wire_count = wiring.wires.len();
-                            let via_count = wiring.vias.len();
+                            let (wc, vc) = (wiring.wires.len(), wiring.vias.len());
                             if let Some(pcb) = &mut self.pcb {
                                 pcb.wiring = wiring;
                             }
@@ -404,9 +371,7 @@ impl DsnViewerApp {
                             self.in_progress_vias.clear();
                             self.route_progress = 1.0;
                             self.route_done = self.route_total;
-                            self.route_status = format!(
-                                "Done — {wire_count} wires, {via_count} vias"
-                            );
+                            self.route_status = format!("Done — {wc} wires, {vc} vias");
                             break;
                         }
                     }
@@ -427,14 +392,10 @@ impl DsnViewerApp {
 
 impl eframe::App for DsnViewerApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        if self.poll_routing() {
-            ctx.request_repaint();
-        }
-        if self.route_rx.is_some() {
+        if self.poll_routing() || self.route_rx.is_some() {
             ctx.request_repaint();
         }
 
-        // Sidebar
         egui::SidePanel::left("sidebar").min_width(180.0).show(ctx, |ui| {
             ui.heading("DSN Viewer");
             ui.separator();
@@ -488,6 +449,7 @@ impl eframe::App for DsnViewerApp {
                 ui.separator();
 
                 if self.route_rx.is_some() {
+                    // ── Routing in progress ──
                     ui.label(self.route_status.as_str());
                     ui.add(
                         egui::ProgressBar::new(self.route_progress)
@@ -501,6 +463,7 @@ impl eframe::App for DsnViewerApp {
                         self.route_status = "Cancelled".to_string();
                     }
                 } else {
+                    // ── Idle ──
                     if ui.button("Auto-Route").clicked() {
                         let pcb_clone = pcb.clone();
                         let (tx, rx) = std::sync::mpsc::sync_channel(128);
@@ -517,7 +480,8 @@ impl eframe::App for DsnViewerApp {
                         });
                     }
 
-                    let has_wires = !pcb.wiring.wires.is_empty() || !pcb.wiring.vias.is_empty();
+                    let has_wires =
+                        !pcb.wiring.wires.is_empty() || !pcb.wiring.vias.is_empty();
                     if has_wires && ui.button("Clear Routing").clicked() {
                         self.clear_routing();
                     }
@@ -532,7 +496,6 @@ impl eframe::App for DsnViewerApp {
             }
         });
 
-        // Canvas
         egui::CentralPanel::default()
             .frame(egui::Frame::canvas(&ctx.style()))
             .show(ctx, |ui| {
@@ -549,17 +512,15 @@ impl eframe::App for DsnViewerApp {
                     }
                 }
 
-                // Pan
                 if response.dragged() {
                     self.pan += response.drag_delta();
                 }
 
-                // Zoom toward cursor with smooth scroll delta for trackpad/mouse consistency.
                 let scroll = ctx.input(|i| i.smooth_scroll_delta.y);
                 if scroll != 0.0 {
                     let factor = if scroll > 0.0 { 1.1f32 } else { 1.0 / 1.1 };
                     if let Some(hover) = response.hover_pos() {
-                        let before: Vec2 = hover - rect.min;
+                        let before = hover - rect.min;
                         self.pan = before + (self.pan - before) * factor;
                     }
                     self.zoom *= factor;
@@ -605,19 +566,14 @@ fn board_bounds(pcb: &Pcb) -> (f64, f64, f64, f64) {
     let mut max_x = f64::MIN;
     let mut max_y = f64::MIN;
 
-    let mut include = |coords: Vec<(f64, f64)>| {
-        for (x, y) in coords {
+    if let Some(boundary) = &pcb.structure.boundary {
+        for (x, y) in shape_points(boundary) {
             min_x = min_x.min(x);
             min_y = min_y.min(y);
             max_x = max_x.max(x);
             max_y = max_y.max(y);
         }
-    };
-
-    if let Some(boundary) = &pcb.structure.boundary {
-        include(shape_points(boundary));
     }
-
     for cg in &pcb.placement.components {
         for p in &cg.places {
             min_x = min_x.min(p.x);
@@ -626,9 +582,7 @@ fn board_bounds(pcb: &Pcb) -> (f64, f64, f64, f64) {
             max_y = max_y.max(p.y);
         }
     }
-
-    // Include wires so pre-routed files with no boundary still fit correctly.
-    for wire in &pcb.wiring.wires {
+    for wire in pcb.wiring.wires.iter() {
         for (x, y) in &wire.path {
             min_x = min_x.min(*x);
             min_y = min_y.min(*y);
@@ -636,10 +590,5 @@ fn board_bounds(pcb: &Pcb) -> (f64, f64, f64, f64) {
             max_y = max_y.max(*y);
         }
     }
-
-    if min_x == f64::MAX {
-        (0.0, 0.0, 1.0, 1.0)
-    } else {
-        (min_x, min_y, max_x, max_y)
-    }
+    if min_x == f64::MAX { (0.0, 0.0, 1.0, 1.0) } else { (min_x, min_y, max_x, max_y) }
 }
