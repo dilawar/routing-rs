@@ -7,4 +7,5 @@ edition = "2024"
 anyhow = "1.0.100"
 argh = "0.1.13"
 dsn-parser = { path = "../dsn-parser" }
+router = { path = "../router" }
 tracing = "0.1.41"

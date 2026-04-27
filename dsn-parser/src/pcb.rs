@@ -231,16 +231,11 @@ pub struct Wiring {
 
 // ─── Top-level PCB ───────────────────────────────────────────────────────────
 
-#[pyo3::pyclass]
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Pcb {
-    #[pyo3(get)]
     pub id: String,
-    #[pyo3(get)]
     pub resolution_unit: String,
-    #[pyo3(get)]
     pub resolution_value: f64,
-    #[pyo3(get)]
     pub unit: String,
     pub structure: Structure,
     pub placement: Placement,
