@@ -949,18 +949,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dsn-viewer"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "dsn-parser",
- "eframe",
- "egui",
- "rfd",
- "router",
-]
-
-[[package]]
 name = "ecolor"
 version = "0.31.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2885,6 +2873,18 @@ dependencies = [
  "anyhow",
  "dsn-parser",
  "pathfinding",
+]
+
+[[package]]
+name = "router-rs"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "dsn-parser",
+ "eframe",
+ "egui",
+ "rfd",
+ "router",
 ]
 
 [[package]]
