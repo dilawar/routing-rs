@@ -52,9 +52,28 @@ cargo run -p cli -- dsn-files/Issue313-FastTest.dsn -o routed.dsn
 # Route and export SVG snapshot
 cargo run -p cli -- dsn-files/Issue367-Charger.dsn -o routed.dsn --svg board.svg
 
+# Route and export KiCad PCB
+cargo run -p cli -- dsn-files/Issue367-Charger.dsn -o routed.dsn --kicad routed.kicad_pcb
+
+# Route and export Gerber files (one .gbr per copper layer)
+cargo run -p cli -- dsn-files/Issue367-Charger.dsn -o routed.dsn --gerber-dir gerber/
+
 # Run all parser tests (56 boards)
 cargo test -p dsn-parser
 ```
+
+## Export formats
+
+After routing, the board can be exported in three formats:
+
+| Format | CLI flag | GUI button | Notes |
+|--------|----------|------------|-------|
+| DSN (Spectra) | `-o <file.dsn>` | — | Full round-trip; re-importable by FreeRouting/KiCad |
+| KiCad PCB | `--kicad <file.kicad_pcb>` | **Export KiCad PCB…** | KiCad 6 s-expression; open directly in KiCad PCB editor |
+| Gerber RS-274X | `--gerber-dir <dir/>` | **Export Gerber…** | One `.gbr` per copper layer; suitable for PCB fabrication |
+| SVG | `--svg <file.svg>` | — | Raster-quality vector snapshot for documentation |
+
+> The GUI export buttons appear in the sidebar once the board has been routed (or pre-existing wires are present). KiCad PCB opens a save-file dialog; Gerber opens a folder picker.
 
 ## Library usage
 

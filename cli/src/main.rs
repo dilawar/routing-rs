@@ -15,6 +15,14 @@ struct Cli {
     /// render the board (post-routing if -o is also given) to an SVG file.
     #[argh(option)]
     svg: Option<String>,
+
+    /// export routed board to a KiCad PCB (.kicad_pcb) file.
+    #[argh(option)]
+    kicad: Option<String>,
+
+    /// export routed board as Gerber files into this directory.
+    #[argh(option)]
+    gerber_dir: Option<String>,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -45,7 +53,28 @@ fn main() -> anyhow::Result<()> {
         eprintln!("SVG written to {svg_path}");
     }
 
-    if cli.output.is_none() && cli.svg.is_none() {
+    if let Some(kicad_path) = &cli.kicad {
+        let content = router::export::to_kicad_pcb(&pcb, &pcb.wiring);
+        std::fs::write(kicad_path, &content)?;
+        eprintln!("KiCad PCB written to {kicad_path}");
+    }
+
+    if let Some(gerber_dir) = &cli.gerber_dir {
+        let dir = std::path::Path::new(gerber_dir);
+        std::fs::create_dir_all(dir)?;
+        let layers = router::export::to_gerber_layers(&pcb, &pcb.wiring);
+        if layers.is_empty() {
+            eprintln!("No routed wires — no Gerber files written.");
+        } else {
+            for (name, content) in &layers {
+                std::fs::write(dir.join(name), content)?;
+                eprintln!("  {name}");
+            }
+            eprintln!("Gerber files written to {gerber_dir}");
+        }
+    }
+
+    if cli.output.is_none() && cli.svg.is_none() && cli.kicad.is_none() && cli.gerber_dir.is_none() {
         println!("{pcb:?}");
     }
 
@@ -223,14 +252,21 @@ fn board_bounds(pcb: &dsn_parser::Pcb) -> (f64, f64, f64, f64) {
         max_y = max_y.max(y);
     };
 
+    // Prefer the board boundary outline — it gives the tightest crop.
+    // Only fall back to component/wire positions when no boundary is present.
     if let Some(b) = &pcb.structure.boundary {
         for (x, y) in shape_points(b) { acc(x, y); }
-    }
-    for cg in &pcb.placement.components {
-        for p in &cg.places { acc(p.x, p.y); }
-    }
-    for wire in &pcb.wiring.wires {
-        for (x, y) in &wire.path { acc(*x, *y); }
+        // Include wires so routed traces outside the outline still fit.
+        for wire in &pcb.wiring.wires {
+            for (x, y) in &wire.path { acc(*x, *y); }
+        }
+    } else {
+        for cg in &pcb.placement.components {
+            for p in &cg.places { acc(p.x, p.y); }
+        }
+        for wire in &pcb.wiring.wires {
+            for (x, y) in &wire.path { acc(*x, *y); }
+        }
     }
     if min_x == f64::MAX { (0.0, 0.0, 1000.0, 1000.0) } else { (min_x, min_y, max_x, max_y) }
 }

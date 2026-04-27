@@ -58,10 +58,13 @@ fn find_path(
                 return sources.iter().map(|&s| (Some(s), 0u32)).collect();
             };
 
-            let mut nbrs: Vec<(PfNode, u32)> = Vec::with_capacity(6);
+            let mut nbrs: Vec<(PfNode, u32)> = Vec::with_capacity(10);
 
-            // 4-directional moves on the same layer.
-            for (dx, dy) in [(-1i64, 0i64), (1, 0), (0, -1), (0, 1)] {
+            // 8-directional moves: cardinal (cost×1) and diagonal (cost×1.5 ≈ √2).
+            for (dx, dy) in [
+                (-1i64, 0i64), (1, 0), (0, -1), (0, 1),
+                (-1, -1), (-1, 1), (1, -1), (1, 1),
+            ] {
                 let nx = ix as i64 + dx;
                 let ny = iy as i64 + dy;
                 if nx < 0 || ny < 0 || nx >= w || ny >= h {
@@ -69,7 +72,13 @@ fn find_path(
                 }
                 let cost = grid.pf_cost(nx as usize, ny as usize, layer, present_factor);
                 if cost < u32::MAX {
-                    nbrs.push((Some((nx as usize, ny as usize, layer)), cost));
+                    // Diagonal steps are ~√2 longer; use ×1.5 as an integer approximation.
+                    let edge_cost = if dx != 0 && dy != 0 {
+                        cost.saturating_add(cost >> 1)
+                    } else {
+                        cost
+                    };
+                    nbrs.push((Some((nx as usize, ny as usize, layer)), edge_cost));
                 }
             }
 
@@ -89,9 +98,12 @@ fn find_path(
         },
         |node: &PfNode| -> u32 {
             let Some(&(ix, iy, _)) = node.as_ref() else { return 0; };
+            // Chebyshev distance is admissible for 8-directional movement.
             targets
                 .iter()
-                .map(|&(tx, ty)| ix.abs_diff(tx) as u32 + iy.abs_diff(ty) as u32)
+                .map(|&(tx, ty)| {
+                    ix.abs_diff(tx).max(iy.abs_diff(ty)) as u32
+                })
                 .min()
                 .unwrap_or(0)
         },
@@ -127,7 +139,12 @@ fn commit_path(
         if at_end || layer_changed {
             let seg = &path[seg_start..i];
             if seg.len() >= 2 {
-                let pts = seg.iter().map(|&(ix, iy, _)| grid.grid_to_world(ix, iy)).collect();
+                // Simplify: merge consecutive same-direction steps into single segments.
+                let coords: Vec<(usize, usize)> =
+                    seg.iter().map(|&(ix, iy, _)| (ix, iy)).collect();
+                let simplified = simplify_path(&coords);
+                let pts =
+                    simplified.iter().map(|&(ix, iy)| grid.grid_to_world(ix, iy)).collect();
                 let layer_name = grid.layer_names.get(seg[0].2).cloned().unwrap_or_default();
                 wires.push(Wire {
                     layer: layer_name,
@@ -168,4 +185,27 @@ fn commit_path(
         path_cells: path.to_vec(),
         via_grid_cells,
     }
+}
+
+/// Remove intermediate collinear/co-directional points from a 2-D grid path.
+/// Input: every grid cell on the path. Output: only direction-change keypoints.
+fn simplify_path(pts: &[(usize, usize)]) -> Vec<(usize, usize)> {
+    if pts.len() <= 2 {
+        return pts.to_vec();
+    }
+    let sgn = |a: usize, b: usize| (b as i64 - a as i64).signum();
+    let mut out = vec![pts[0]];
+    let mut dx = sgn(pts[0].0, pts[1].0);
+    let mut dy = sgn(pts[0].1, pts[1].1);
+    for i in 2..pts.len() {
+        let ndx = sgn(pts[i - 1].0, pts[i].0);
+        let ndy = sgn(pts[i - 1].1, pts[i].1);
+        if ndx != dx || ndy != dy {
+            out.push(pts[i - 1]);
+            dx = ndx;
+            dy = ndy;
+        }
+    }
+    out.push(*pts.last().unwrap());
+    out
 }

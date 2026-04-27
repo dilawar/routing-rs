@@ -1,5 +1,6 @@
 pub mod grid;
 pub mod bfs;
+pub mod export;
 pub mod net_order;
 pub mod pad_map;
 pub mod serialise;
@@ -28,8 +29,8 @@ impl Default for RouterConfig {
     fn default() -> Self {
         Self {
             grid_pitch: 100.0,
-            via_cost: 5,
-            max_pf_passes: 30,
+            via_cost: 15,       // discourage unnecessary layer changes
+            max_pf_passes: 50,
             present_factor_step: 2,
             history_increment: 1,
         }

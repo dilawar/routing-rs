@@ -464,6 +464,9 @@ impl eframe::App for DsnViewerApp {
                     }
                 } else {
                     // ── Idle ──
+                    let has_wires =
+                        !pcb.wiring.wires.is_empty() || !pcb.wiring.vias.is_empty();
+
                     if ui.button("Auto-Route").clicked() {
                         let pcb_clone = pcb.clone();
                         let (tx, rx) = std::sync::mpsc::sync_channel(128);
@@ -480,17 +483,57 @@ impl eframe::App for DsnViewerApp {
                         });
                     }
 
-                    let has_wires =
-                        !pcb.wiring.wires.is_empty() || !pcb.wiring.vias.is_empty();
-                    if has_wires && ui.button("Clear Routing").clicked() {
-                        self.clear_routing();
-                    }
-
                     if !self.route_status.is_empty() {
                         ui.label(
                             egui::RichText::new(self.route_status.as_str())
                                 .color(Color32::from_rgb(100, 200, 100)),
                         );
+                    }
+
+                    // Export — shown when wires exist; must come before any
+                    // &mut self calls (clear_routing) so the pcb borrow can end here.
+                    if has_wires {
+                        ui.separator();
+                        ui.label("Export");
+                        if ui.button("Export KiCad PCB…").clicked() {
+                            let pcb_clone = pcb.clone();
+                            if let Some(path) = rfd::FileDialog::new()
+                                .add_filter("KiCad PCB", &["kicad_pcb"])
+                                .set_file_name("routed.kicad_pcb")
+                                .save_file()
+                            {
+                                let content = router::export::to_kicad_pcb(
+                                    &pcb_clone,
+                                    &pcb_clone.wiring,
+                                );
+                                if let Err(e) = std::fs::write(&path, content) {
+                                    self.error = Some(format!("Export failed: {e}"));
+                                }
+                            }
+                        }
+                        if ui.button("Export Gerber…").clicked() {
+                            let pcb_clone = pcb.clone();
+                            if let Some(dir) = rfd::FileDialog::new().pick_folder() {
+                                let layers = router::export::to_gerber_layers(
+                                    &pcb_clone,
+                                    &pcb_clone.wiring,
+                                );
+                                for (name, content) in layers {
+                                    if let Err(e) =
+                                        std::fs::write(dir.join(&name), content)
+                                    {
+                                        self.error =
+                                            Some(format!("Export failed ({name}): {e}"));
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Destructive action last; pcb borrow has already ended above.
+                    if has_wires && ui.button("Clear Routing").clicked() {
+                        self.clear_routing();
                     }
                 }
             }
