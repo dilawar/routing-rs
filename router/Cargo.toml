@@ -1,0 +1,9 @@
+[package]
+name = "router"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dsn-parser = { path = "../dsn-parser" }
+anyhow = "1.0"
+pathfinding = "4"
