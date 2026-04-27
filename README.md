@@ -1,6 +1,7 @@
 # router-rs
 
-> **Note: This codebase was generated with [Claude Code](https://claude.ai/code) (Anthropic AI).**
+_This is a vibecoded project. It doesn't work yet! Though images it generated and other early results
+were impressive enough to burn tokens._
 
 A Rust workspace that parses **Spectra DSN files** (PCB design format used by KiCad / FreeRouting),
 auto-routes them with a PathFinder congestion-based router, and visualises the result in an egui
