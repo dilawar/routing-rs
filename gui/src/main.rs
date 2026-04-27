@@ -5,13 +5,13 @@ fn main() -> eframe::Result {
 
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_title("DSN Viewer")
+            .with_title("router-rs")
             .with_inner_size([1200.0, 800.0]),
         ..Default::default()
     };
     eframe::run_native(
-        "DSN Viewer",
+        "router-rs",
         options,
-        Box::new(move |_cc| Ok(Box::new(app::DsnViewerApp::with_file(initial_file)))),
+        Box::new(move |_cc| Ok(Box::new(app::RouterApp::with_file(initial_file)))),
     )
 }

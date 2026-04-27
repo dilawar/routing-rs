@@ -1,10 +1,10 @@
 [package]
-name = "dsn-viewer"
+name = "router-rs"
 version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "dsn-viewer"
+name = "router-rs"
 path = "src/main.rs"
 
 [dependencies]

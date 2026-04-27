@@ -33,7 +33,7 @@ struct LayerVis {
 // ─── App state ───────────────────────────────────────────────────────────────
 
 #[derive(Default)]
-pub struct DsnViewerApp {
+pub struct RouterApp {
     pcb: Option<Pcb>,
     error: Option<String>,
 
@@ -60,7 +60,7 @@ pub struct DsnViewerApp {
     route_status: String,
 }
 
-impl DsnViewerApp {
+impl RouterApp {
     pub fn with_file(path: Option<std::path::PathBuf>) -> Self {
         let mut app = Self {
             show_ratsnest: true,
@@ -390,14 +390,14 @@ impl DsnViewerApp {
 
 // ─── eframe App impl ─────────────────────────────────────────────────────────
 
-impl eframe::App for DsnViewerApp {
+impl eframe::App for RouterApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         if self.poll_routing() || self.route_rx.is_some() {
             ctx.request_repaint();
         }
 
         egui::SidePanel::left("sidebar").min_width(180.0).show(ctx, |ui| {
-            ui.heading("DSN Viewer");
+            ui.heading("router-rs");
             ui.separator();
 
             if ui.button("Open DSN file…").clicked() {
